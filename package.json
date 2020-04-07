@@ -1,22 +1,23 @@
 {
   "name": "repkg",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "replace-package utility",
   "homepage": "https://github.com/PowerOfM/repkg#readme",
   "author": "Mesbah Mowlavi <mesbah@mowlavi.ca>",
   "license": "MIT",
   "main": "bin/repkg",
   "bin": {
-    "repkg": "repkg"
+    "repkg": "bin/repkg"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/PowerOfM/repkg.git"
   },
   "keywords": [
-    "config",
-    "package",
     "replace",
+    "package",
+    "exchange",
+    "config",
     "swap"
   ],
   "bugs": {
