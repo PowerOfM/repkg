@@ -1,0 +1,362 @@
+#!/usr/bin/env node
+const fs = require('fs')
+const path = require('path')
+const readline = require('readline')
+
+const fRoot = '.rpkg'
+const pIndent = '   '
+const pNull = '-- none --'
+
+const commands = { about, status, add, commit, load, unload }
+let state = { current: '', packages: [], added: [] }
+
+async function main(argv) {
+  // Parse input
+  const cmd = argv[2]
+  const params = argv.slice(3)
+  const fn = commands[cmd]
+
+  // Error on invalid commands
+  if (!fn) {
+    errorExit('invalid command', '<' + Object.keys(commands).join('|') + '>')
+  }
+
+  // Run
+  await fn(params)
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+//  COMMANDS
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+async function about() {
+  console.log(`          _
+  ___ ___| |_ ___
+ |  _| . | '_| . |
+ |_| |  _|_,_|_  |  0.1
+     |_|     |___|
+`)
+  console.log('usage: rpkg <' + Object.keys(commands).join('|') + '>')
+}
+async function status() {
+  loadState()
+
+  console.log('current package:')
+  console.log(pIndent, state.current || pNull)
+  console.log('')
+
+  console.log('available packages:')
+  if (state.packages.length) {
+    state.packages.forEach(pkg => console.log(pIndent, pkg))
+  } else {
+    console.log(pIndent, pNull)
+  }
+  console.log('')
+
+  if (state.added.length) {
+    console.log('added files:')
+    state.added.forEach(fp => console.log(pIndent, fp))
+    console.log('  > commit these files to create a package')
+  }
+}
+
+async function add(filePaths) {
+  if (!filePaths.length) errorExit('missing files', 'add <file1> [<file2> ...]')
+
+  loadState()
+
+  console.log('adding files:')
+  for (let i = 0; i < filePaths.length; i++) {
+    const fp = filePaths[i]
+    const absFp = path.resolve(fp)
+    if (!fs.existsSync(absFp)) errorExit(`'${fp}' doesn't exist`)
+
+    const stat = fs.lstatSync(absFp)
+    if (!stat.isFile()) errorExit(`'${fp}' is not a file`)
+
+    const normalizedFp = path.relative(process.cwd(), absFp)
+    if (state.added.indexOf(normalizedFp) < 0) {
+      state.added.push(normalizedFp)
+    }
+    console.log(pIndent, normalizedFp)
+  }
+
+  saveState()
+}
+
+async function commit([name]) {
+  if (!name) errorExit('missing name', 'commit <name>')
+
+  loadState()
+
+  if (!state.added.length) {
+    errorExit('add some files before commiting')
+  }
+
+  // Copy added files to store
+  console.log('commiting files:')
+  createStorePackage(name, state.added)
+
+  // Update state
+  if (state.packages.indexOf(name) < 0) {
+    state.packages.push(name)
+  }
+  console.log(
+    `\n package ${name} created with ${state.added.length} file${
+      state.added.length === 1 ? '' : 's'
+    }`
+  )
+  state.added = []
+
+  saveState()
+}
+
+async function load([name]) {
+  if (!name) errorExit('missing name', 'load <name>')
+
+  loadState()
+
+  if (state.packages.indexOf(name) < 0) {
+    console.warn(
+      "that package isn't in our config, and doesn't exist (unless you've " +
+        'added it manually)'
+    )
+
+    const res = await prompt('try anyways? (y/N)')
+    if (res.toLowerCase() !== 'y') {
+      errorExit(`package ${name} doesn't exist`)
+    }
+  }
+
+  if (!state.current) {
+    console.warn(
+      "looks like you don't currently have a package loaded, so you'll be prompted to replace any existing files that conflict with the package\n"
+    )
+  } else if (state.current === name) {
+    const res = await prompt(`${name} is already loaded. reload it? (y/N)`)
+    if (res.toLowerCase() !== 'y') {
+      errorExit(`package ${name} already loaded`)
+    }
+  } else {
+    console.log(`unloading ${state.current}:`)
+    unloadStorePackage(state.current)
+    console.log('')
+  }
+
+  // Load files from store
+  console.log(`loading ${name}:`)
+  await loadStorePackage(name)
+
+  console.log('\npackage ' + name + ' loaded')
+  state.current = name
+  saveState()
+}
+
+async function unload() {
+  loadState()
+
+  if (!state.current) {
+    errorExit('no package loaded')
+  }
+
+  // Unload files from working directory
+  console.log('unloading files:')
+  await unloadStorePackage(state.current)
+
+  console.log('\n package ' + state.current + ' unloaded')
+  state.current = ''
+  saveState()
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+//  STATE MANAGER
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+const statePath = path.join(fRoot, '.rpkg_state')
+function loadState() {
+  if (!fs.existsSync(statePath)) return
+
+  try {
+    const data = fs.readFileSync(statePath)
+    state = JSON.parse(data)
+  } catch (e) {
+    console.error(e)
+    errorExit('rpkg state is corrupt')
+  }
+}
+
+function saveState() {
+  if (!fs.existsSync(fRoot)) {
+    fs.mkdirSync(fRoot)
+  }
+
+  try {
+    fs.writeFileSync(statePath, JSON.stringify(state))
+  } catch (e) {
+    console.error(e)
+    console.error('unable to save rpkg state')
+    console.error('state for recovery:', state)
+    process.exit(1)
+  }
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+//  STORE MANAGER
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+function createStorePackage(name, filePaths) {
+  // Create root
+  const folderPath = path.join(fRoot, name)
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true })
+  }
+
+  // Read current index
+  const storeIndexFP = path.join(folderPath, '.rpkg_index')
+  let storeIndex = []
+  if (fs.existsSync(storeIndexFP)) {
+    storeIndex = JSON.parse(fs.readFileSync(storeIndexFP))
+  }
+
+  // Copy files
+  for (let i = 0; i < filePaths.length; i++) {
+    const fp = filePaths[i]
+    console.log(pIndent, fp)
+    // TODO: don't copy symlinks made by rpkg
+
+    const dir = path.dirname(fp)
+    const filename = path.basename(fp)
+    const storeDir = path.join(folderPath, dir)
+    fs.mkdirSync(storeDir, { recursive: true })
+
+    const storeFP = path.join(storeDir, filename)
+    fs.copyFileSync(filePaths[i], storeFP)
+
+    if (storeIndex.indexOf(fp) < 0) {
+      storeIndex.push(fp)
+    }
+  }
+
+  // Update store index
+  fs.writeFileSync(storeIndexFP, JSON.stringify(storeIndex))
+}
+
+async function loadStorePackage(name) {
+  const folderPath = path.join(fRoot, name)
+  if (!fs.existsSync(folderPath)) {
+    errorExit(`package ${name} doesn't exist`)
+  }
+
+  // Load index
+  const storeIndexFP = path.join(folderPath, '.rpkg_index')
+  let storeIndex
+  try {
+    storeIndex = JSON.parse(fs.readFileSync(storeIndexFP))
+  } catch (e) {
+    console.error(e)
+    errorExit('rpkg package index is corrupt')
+  }
+
+  // Link files
+  for (let i = 0; i < storeIndex.length; i++) {
+    const fp = storeIndex[i]
+    const dir = path.dirname(fp)
+    console.log(pIndent, fp)
+
+    const storeFP = path.join(folderPath, fp)
+    if (!fs.existsSync(storeFP)) {
+      console.warn(pIndent, ' !> missing from the package files, skipping...')
+      continue
+    }
+
+    if (fs.existsSync(fp)) {
+      const expectedRealFPStart = path.join(process.cwd(), fRoot)
+      const actualRealFP = fs.realpathSync(fp)
+      if (actualRealFP.indexOf(expectedRealFPStart) === 0) {
+        fs.unlinkSync(fp)
+      } else {
+        const res = await prompt('replace existing file? (y/N)')
+        if (res.toLowerCase() !== 'y') continue
+        fs.unlinkSync(fp)
+      }
+    } else {
+      if (!fs.existsSync(dir)) {
+        console.log(pIndent, pIndent, 'creating directory', dir)
+        fs.mkdirSync(dir, { recursive: true })
+      }
+    }
+
+    fs.symlinkSync(path.relative(dir, storeFP), fp)
+  }
+}
+async function unloadStorePackage(name) {
+  const folderPath = path.join(fRoot, name)
+  if (!fs.existsSync(folderPath)) {
+    errorExit(`package ${name} doesn't exist`)
+  }
+
+  // Load index
+  const storeIndexFP = path.join(folderPath, '.rpkg_index')
+  let storeIndex
+  try {
+    storeIndex = JSON.parse(fs.readFileSync(storeIndexFP))
+  } catch (e) {
+    console.error(e)
+    errorExit('rpkg package index is corrupt')
+  }
+
+  // Unlink files
+  for (let i = 0; i < storeIndex.length; i++) {
+    const fp = storeIndex[i]
+    console.log(pIndent, fp)
+
+    if (!fs.existsSync(fp)) {
+      console.warn(pIndent, ' !> missing from the working files, skipping...')
+      continue
+    }
+
+    const expectedRealFP = path.join(process.cwd(), folderPath, fp)
+    const actualRealFP = fs.realpathSync(fp)
+    if (actualRealFP.indexOf(expectedRealFP) === 0) {
+      fs.unlinkSync(fp)
+    } else {
+      console.log(pIndent, ' !> not from package! skipping...')
+    }
+  }
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+//  UTILITIES
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+function errorExit(msg, usage) {
+  console.error('!!>', msg)
+  if (usage) console.error('!!> usage: rpkg ' + usage)
+  process.exit(1)
+}
+
+function prompt(message) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  })
+
+  return new Promise(resolve => {
+    rl.question(' ?> ' + message + ' ', ans => {
+      rl.close()
+      console.log('')
+      resolve(ans)
+    })
+  })
+}
+
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+//  ENTRY POINT
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+main(process.argv)
