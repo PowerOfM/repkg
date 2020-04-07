@@ -7,6 +7,8 @@
 ```
 > rpkg - replace package utility
 
+![replace-pkg](https://img.shields.io/npm/v/replace-pkg?style=flat-square)
+
 ## the problem
 I needed to be able to swap configuration files and other files on the fly without having to constantly mess with git branches. The files that needed to be changed were static and could not be easily altered using environment variables.
 
@@ -55,10 +57,12 @@ The `.rpkg_state` file is an object with `current` (package name), `packages` (a
 
 While you are welcome to change files directly in the `.rpkg/` folder, it is preferred to load a package, make changes, and then unload or switch to another package.
 
-## why is this not tested?!?!
-well it works on my machine.
-
-No but seriously, it's working for me across multiple environments. If that's not good enough, PRs are always welcome!
+## faqs
+- **why is this not tested?!?!**
+  + well it works on my machine.
+  + No but seriously, it's working for me across multiple environments. If that's not good enough, PRs are always welcome!
+- **why is this called replace-pkg in npm?**
+  + cuz npm wouldn't let me use rpkg, even tho it isn't being used.
 
 ## alternatives
 - `make`: if you have experience with it, GNU Make is probably going to be the most powerful and versatile solution

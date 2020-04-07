@@ -1,11 +1,14 @@
 {
-  "name": "rpkg",
+  "name": "replace-pkg",
   "version": "0.1.0",
   "description": "replace-package utility",
   "homepage": "https://github.com/PowerOfM/rpkg-node#readme",
   "author": "Mesbah Mowlavi <mesbah@mowlavi.ca>",
   "license": "MIT",
   "main": "rpkg",
+  "bin": {
+    "rpkg": "rpkg"
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/PowerOfM/rpkg-node.git"
