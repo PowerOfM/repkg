@@ -3,11 +3,11 @@
   _______ ___  / /_____ _
  / __/ -_) _ \/  '_/ _ `/
 /_/  \__/ .__/_/\_\\_, / 
-       /_/        /___/  
+       /_/        /___/
+  
+replace package utility
 ```
 ![repkg](https://img.shields.io/npm/v/repkg?style=flat-square)
-
-> repkg - replace package utility
 
 ## the problem
 I needed to be able to swap configuration files and other files on the fly without having to constantly mess with git branches. The files that needed to be changed were static and could not be easily altered using environment variables.
@@ -26,12 +26,13 @@ Inspired by git, repkg has 4 main functions:
 - `load`: loads a package by symbolically-linking package files to the working directory
 - `unload`: unloads a package by unlinking package in the working directory
 
-To use it, first add the files that will make up the package.
+To use it, first add the files that will make up the package (can be run multiple times).
 ```
-repkg add src/config.json src/static.html src/image.png
+repkg add src/config.json src/static.html
+repkg add src/image.png
 ```
 
-Then commit the files to create a package (package names must be a valid folder names)
+Then commit the files to create a package (package names must be valid folder names)
 ```
 repkg commit a
 ```
