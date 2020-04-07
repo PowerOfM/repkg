@@ -27,20 +27,28 @@ Inspired by git, repkg has 4 main functions:
 - `unload`: unloads a package by unlinking package in the working directory
 
 To use it, first add the files that will make up the package.
-> `repkg add src/config.json src/static.html src/image.png`
+```
+repkg add src/config.json src/static.html src/image.png
+```
 
 Then commit the files to create a package (package names must be a valid folder names)
-> `repkg commit a`
+```
+repkg commit a
+```
 
 The added files have been copied to the repkg store (`.repkg/a/` in the cwd). It is now safe to modify them to the next variant and repeat the above steps to create another package `b`. To apply the package `a`, use the `load` command:
-> `repkg load a`
+```
+repkg load a
+```
 
 If you haven't deleted the files in the working directory, you will be prompted to replace them. Once complete, the files will have been replaced with symbolic links to the `.repkg/a/` directory. 
 
 > **NOTE:** Any changes made to loaded package files will update the files in package.
 
 To remove the symbolically linked package files, use `unload`:
-> `repkg unload`
+```
+repkg unload
+```
 
 When you load a package, the previous one is unloaded first to prevent conflicts.
 
@@ -64,5 +72,5 @@ While you are welcome to change files directly in the `.repkg/` folder, it is pr
 
 ## alternatives
 - `make`: if you have experience with it, GNU Make is probably going to be the most powerful and versatile solution
-- `.env`: if all you need is variable swapping, dot-env or other similar configuration managers are probably best bets.
+- `.env`: if all you need is variable swapping, dot-env or a similar configuration manager is probably your best bet.
 - `git`: branch and then apply changes. When the upstream branch changes, rebase? Someone smarter can probably show a better way and explain why this utility is useless but oh well I had fun writing it.
