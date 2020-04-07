@@ -2,13 +2,10 @@
   "name": "rpkg",
   "version": "0.1.0",
   "description": "replace-package utility",
+  "homepage": "https://github.com/PowerOfM/rpkg-node#readme",
+  "author": "Mesbah Mowlavi <mesbah@mowlavi.ca>",
+  "license": "MIT",
   "main": "rpkg",
-  "directories": {
-    "test": "test"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/PowerOfM/rpkg-node.git"
@@ -19,10 +16,14 @@
     "replace",
     "swap"
   ],
-  "author": "Mesbah Mowlavi <mesbah@mowlavi.ca>",
-  "license": "MIT",
   "bugs": {
     "url": "https://github.com/PowerOfM/rpkg-node/issues"
   },
-  "homepage": "https://github.com/PowerOfM/rpkg-node#readme"
+  "scripts": {
+    "test": "echo \"One day...\""
+  },
+  "devDependencies": {
+    "standard": "^14.3.3"
+  },
+  "standard": true
 }

@@ -10,7 +10,7 @@ const pNull = '-- none --'
 const commands = { about, status, add, commit, load, unload }
 let state = { current: '', packages: [], added: [] }
 
-async function main(argv) {
+async function main (argv) {
   // Parse input
   const cmd = argv[2]
   const params = argv.slice(3)
@@ -26,11 +26,11 @@ async function main(argv) {
 }
 
 //
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //  COMMANDS
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //
-async function about() {
+async function about () {
   console.log(`          _
   ___ ___| |_ ___
  |  _| . | '_| . |
@@ -39,7 +39,7 @@ async function about() {
 `)
   console.log('usage: rpkg <' + Object.keys(commands).join('|') + '>')
 }
-async function status() {
+async function status () {
   loadState()
 
   console.log('current package:')
@@ -61,7 +61,7 @@ async function status() {
   }
 }
 
-async function add(filePaths) {
+async function add (filePaths) {
   if (!filePaths.length) errorExit('missing files', 'add <file1> [<file2> ...]')
 
   loadState()
@@ -85,7 +85,7 @@ async function add(filePaths) {
   saveState()
 }
 
-async function commit([name]) {
+async function commit ([name]) {
   if (!name) errorExit('missing name', 'commit <name>')
 
   loadState()
@@ -112,7 +112,7 @@ async function commit([name]) {
   saveState()
 }
 
-async function load([name]) {
+async function load ([name]) {
   if (!name) errorExit('missing name', 'load <name>')
 
   loadState()
@@ -153,7 +153,7 @@ async function load([name]) {
   saveState()
 }
 
-async function unload() {
+async function unload () {
   loadState()
 
   if (!state.current) {
@@ -170,12 +170,12 @@ async function unload() {
 }
 
 //
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //  STATE MANAGER
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //
 const statePath = path.join(fRoot, '.rpkg_state')
-function loadState() {
+function loadState () {
   if (!fs.existsSync(statePath)) return
 
   try {
@@ -187,7 +187,7 @@ function loadState() {
   }
 }
 
-function saveState() {
+function saveState () {
   if (!fs.existsSync(fRoot)) {
     fs.mkdirSync(fRoot)
   }
@@ -203,11 +203,11 @@ function saveState() {
 }
 
 //
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //  STORE MANAGER
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //
-function createStorePackage(name, filePaths) {
+function createStorePackage (name, filePaths) {
   // Create root
   const folderPath = path.join(fRoot, name)
   if (!fs.existsSync(folderPath)) {
@@ -244,7 +244,7 @@ function createStorePackage(name, filePaths) {
   fs.writeFileSync(storeIndexFP, JSON.stringify(storeIndex))
 }
 
-async function loadStorePackage(name) {
+async function loadStorePackage (name) {
   const folderPath = path.join(fRoot, name)
   if (!fs.existsSync(folderPath)) {
     errorExit(`package ${name} doesn't exist`)
@@ -292,7 +292,7 @@ async function loadStorePackage(name) {
     fs.symlinkSync(path.relative(dir, storeFP), fp)
   }
 }
-async function unloadStorePackage(name) {
+async function unloadStorePackage (name) {
   const folderPath = path.join(fRoot, name)
   if (!fs.existsSync(folderPath)) {
     errorExit(`package ${name} doesn't exist`)
@@ -329,17 +329,17 @@ async function unloadStorePackage(name) {
 }
 
 //
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //  UTILITIES
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //
-function errorExit(msg, usage) {
+function errorExit (msg, usage) {
   console.error('!!>', msg)
   if (usage) console.error('!!> usage: rpkg ' + usage)
   process.exit(1)
 }
 
-function prompt(message) {
+function prompt (message) {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -355,8 +355,8 @@ function prompt(message) {
 }
 
 //
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //  ENTRY POINT
-//////////////////////////////////////////////////////////////////////////////////////////
+/// ///////////////////////////////////////////////////////////////////////////////////////
 //
 main(process.argv)
