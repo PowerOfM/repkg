@@ -1,17 +1,17 @@
 {
-  "name": "replace-pkg",
+  "name": "repkg",
   "version": "0.1.0",
   "description": "replace-package utility",
-  "homepage": "https://github.com/PowerOfM/rpkg-node#readme",
+  "homepage": "https://github.com/PowerOfM/repkg#readme",
   "author": "Mesbah Mowlavi <mesbah@mowlavi.ca>",
   "license": "MIT",
-  "main": "rpkg",
+  "main": "bin/repkg",
   "bin": {
-    "rpkg": "rpkg"
+    "repkg": "repkg"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/PowerOfM/rpkg-node.git"
+    "url": "git+ssh://git@github.com/PowerOfM/repkg.git"
   },
   "keywords": [
     "config",
@@ -20,7 +20,7 @@
     "swap"
   ],
   "bugs": {
-    "url": "https://github.com/PowerOfM/rpkg-node/issues"
+    "url": "https://github.com/PowerOfM/repkg/issues"
   },
   "scripts": {
     "test": "echo \"One day...\""

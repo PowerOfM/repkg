@@ -3,26 +3,52 @@ const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
 
-const fRoot = '.rpkg'
+const fRoot = '.repkg'
 const pIndent = '   '
 const pNull = '-- none --'
 
-const commands = { about, status, add, commit, load, unload }
+const commands = {
+  status: {
+    fn: status,
+    info: 'list current packages and staged files'
+  },
+  add: {
+    fn: add,
+    info: 'add file to staging list'
+  },
+  commit: {
+    fn: commit,
+    info: 'copies staged files to a new or existing package'
+  },
+  load: {
+    fn: load,
+    info: 'applies a package\'s files to the working directory'
+  },
+  unload: {
+    fn: unload,
+    info: 'unlinks the current package\'s files from the working directory'
+  },
+  help: {
+    fn: help,
+    info: 'you\'re reading it'
+  }
+}
+
 let state = { current: '', packages: [], added: [] }
 
 async function main (argv) {
   // Parse input
-  const cmd = argv[2]
+  const cmdName = argv[2] || 'help'
   const params = argv.slice(3)
-  const fn = commands[cmd]
+  const cmd = commands[cmdName]
 
   // Error on invalid commands
-  if (!fn) {
+  if (!cmd) {
     errorExit('invalid command', '<' + Object.keys(commands).join('|') + '>')
   }
 
   // Run
-  await fn(params)
+  await cmd.fn(params)
 }
 
 //
@@ -30,14 +56,19 @@ async function main (argv) {
 //  COMMANDS
 /// ///////////////////////////////////////////////////////////////////////////////////////
 //
-async function about () {
-  console.log(`          _
-  ___ ___| |_ ___
- |  _| . | '_| . |
- |_| |  _|_,_|_  |  0.1
-     |_|     |___|
+async function help () {
+  console.log(`
+                __       
+  _______ ___  / /_____ _
+ / __/ -_) _ \\/  '_/ _ \`/
+/_/  \\__/ .__/_/\\_\\\\_, / 
+       /_/        /___/  
 `)
-  console.log('usage: rpkg <' + Object.keys(commands).join('|') + '>')
+  console.log('usage: repkg <command> [params]\n')
+  console.log('commands:')
+  Object.keys(commands).forEach(cmd => {
+    console.log(pIndent, cmd, '\t', commands[cmd].info)
+  })
 }
 async function status () {
   loadState()
@@ -174,7 +205,7 @@ async function unload () {
 //  STATE MANAGER
 /// ///////////////////////////////////////////////////////////////////////////////////////
 //
-const statePath = path.join(fRoot, '.rpkg_state')
+const statePath = path.join(fRoot, '.repkg_state')
 function loadState () {
   if (!fs.existsSync(statePath)) return
 
@@ -183,7 +214,7 @@ function loadState () {
     state = JSON.parse(data)
   } catch (e) {
     console.error(e)
-    errorExit('rpkg state is corrupt')
+    errorExit('repkg state is corrupt')
   }
 }
 
@@ -196,7 +227,7 @@ function saveState () {
     fs.writeFileSync(statePath, JSON.stringify(state))
   } catch (e) {
     console.error(e)
-    console.error('unable to save rpkg state')
+    console.error('unable to save repkg state')
     console.error('state for recovery:', state)
     process.exit(1)
   }
@@ -215,7 +246,7 @@ function createStorePackage (name, filePaths) {
   }
 
   // Read current index
-  const storeIndexFP = path.join(folderPath, '.rpkg_index')
+  const storeIndexFP = path.join(folderPath, '.repkg_index')
   let storeIndex = []
   if (fs.existsSync(storeIndexFP)) {
     storeIndex = JSON.parse(fs.readFileSync(storeIndexFP))
@@ -225,7 +256,7 @@ function createStorePackage (name, filePaths) {
   for (let i = 0; i < filePaths.length; i++) {
     const fp = filePaths[i]
     console.log(pIndent, fp)
-    // TODO: don't copy symlinks made by rpkg
+    // TODO: don't copy symlinks made by repkg
 
     const dir = path.dirname(fp)
     const filename = path.basename(fp)
@@ -251,13 +282,13 @@ async function loadStorePackage (name) {
   }
 
   // Load index
-  const storeIndexFP = path.join(folderPath, '.rpkg_index')
+  const storeIndexFP = path.join(folderPath, '.repkg_index')
   let storeIndex
   try {
     storeIndex = JSON.parse(fs.readFileSync(storeIndexFP))
   } catch (e) {
     console.error(e)
-    errorExit('rpkg package index is corrupt')
+    errorExit('repkg package index is corrupt')
   }
 
   // Link files
@@ -299,13 +330,13 @@ async function unloadStorePackage (name) {
   }
 
   // Load index
-  const storeIndexFP = path.join(folderPath, '.rpkg_index')
+  const storeIndexFP = path.join(folderPath, '.repkg_index')
   let storeIndex
   try {
     storeIndex = JSON.parse(fs.readFileSync(storeIndexFP))
   } catch (e) {
     console.error(e)
-    errorExit('rpkg package index is corrupt')
+    errorExit('repkg package index is corrupt')
   }
 
   // Unlink files
@@ -335,7 +366,7 @@ async function unloadStorePackage (name) {
 //
 function errorExit (msg, usage) {
   console.error('!!>', msg)
-  if (usage) console.error('!!> usage: rpkg ' + usage)
+  if (usage) console.error('!!> usage: repkg ' + usage)
   process.exit(1)
 }
 
